@@ -21,6 +21,7 @@ import { updateUser } from "@/models/users"
 import { Category, Field, File, Project, Transaction } from "@/prisma/client"
 import { randomUUID } from "crypto"
 import { mkdir, readFile, rename, writeFile } from "fs/promises"
+import * as storage from "@/lib/storage"
 import { revalidatePath } from "next/cache"
 import path from "path"
 
@@ -99,16 +100,9 @@ export async function saveFileAsTransactionAction(
     // Create transaction
     const transaction = await createTransaction(user.id, validatedForm.data)
 
-    // Move file to processed location
-    const userUploadsDirectory = getUserUploadsDirectory(user)
-    const originalFileName = path.basename(file.path)
-    const newRelativeFilePath = getTransactionFileUploadPath(file.id, originalFileName, transaction)
-
-    // Move file to new location and name
-    const oldFullFilePath = safePathJoin(userUploadsDirectory, file.path)
-    const newFullFilePath = safePathJoin(userUploadsDirectory, newRelativeFilePath)
-    await mkdir(path.dirname(newFullFilePath), { recursive: true })
-    await rename(path.resolve(oldFullFilePath), path.resolve(newFullFilePath))
+  // Move file to processed location (storage adapter handles move)
+  const newRelativeFilePath = getTransactionFileUploadPath(file.id, path.basename(file.path), transaction)
+  await storage.moveFile(user, file.path, newRelativeFilePath)
 
     // Update file record
     await updateFile(file.id, user.id, {
@@ -162,23 +156,16 @@ export async function splitFileIntoItemsAction(
       return { success: false, error: "Original file not found" }
     }
 
-    // Get the original file's content
-    const userUploadsDirectory = getUserUploadsDirectory(user)
-    const originalFilePath = safePathJoin(userUploadsDirectory, originalFile.path)
-    const fileContent = await readFile(originalFilePath)
+  // Get the original file's content (from storage if needed)
+  const fileContent = await storage.downloadBuffer(user, originalFile.path)
 
     // Create a new file for each item
     for (const item of items) {
       const fileUuid = randomUUID()
       const fileName = `${originalFile.filename}-part-${item.name}`
       const relativeFilePath = unsortedFilePath(fileUuid, fileName)
-      const fullFilePath = safePathJoin(userUploadsDirectory, relativeFilePath)
-
-      // Create directory if it doesn't exist
-      await mkdir(path.dirname(fullFilePath), { recursive: true })
-
-      // Copy the original file content
-      await writeFile(fullFilePath, fileContent)
+  // Upload split file to storage
+  await storage.uploadBuffer(user, relativeFilePath, fileContent, originalFile.mimetype)
 
       // Create file record in database with the item data cached
       await createFile(user.id, {
@@ -208,8 +195,17 @@ export async function splitFileIntoItemsAction(
     await deleteFile(fileId, user.id)
 
     // Update user storage used
-    const storageUsed = await getDirectorySize(getUserUploadsDirectory(user))
-    await updateUser(user.id, { storageUsed })
+    if (process.env.STORAGE_PROVIDER === "supabase") {
+      // net increase = (items.length - 1) * original size
+      const originalSize = (originalFile.metadata as any)?.size || fileContent.length
+      const delta = (items.length - 1) * originalSize
+      if (delta > 0) {
+        await updateUser(user.id, { storageUsed: { increment: delta } } as any)
+      }
+    } else {
+      const storageUsed = await getDirectorySize(getUserUploadsDirectory(user))
+      await updateUser(user.id, { storageUsed })
+    }
 
     revalidatePath("/unsorted")
     return { success: true }

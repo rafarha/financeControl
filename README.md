@@ -158,6 +158,16 @@ Configure TaxHacker for your specific needs with these environment variables:
 | `DISABLE_SIGNUP` | No | Disable new user registration on your instance | `false` |
 | `BETTER_AUTH_SECRET` | Yes | Secret key for authentication (minimum 16 characters) | `your-secure-random-key` |
 
+| `STORAGE_PROVIDER` | No | Storage backend for uploads. `local` (default) or `supabase` | `supabase` |
+
+If you use Supabase Storage, set these env vars as well:
+
+- `SUPABASE_URL` — your Supabase project URL
+- `SUPABASE_KEY` — anon or service-role key (store securely)
+- `SUPABASE_BUCKET` — bucket name to store files (default: `uploads`)
+
+When deploying to Vercel, prefer Supabase (or S3-compatible storage) because Vercel's filesystem is ephemeral and does not persist uploads between deployments.
+
 You can also configure LLM provider settings in the application or via environment variables:
 
 - **OpenAI**: `OPENAI_MODEL_NAME` and `OPENAI_API_KEY`

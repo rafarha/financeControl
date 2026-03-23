@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth"
 import { fileExists, fullPathForFile } from "@/lib/files"
+import * as storage from "@/lib/storage"
 import { generateFilePreviews } from "@/lib/previews/generate"
 import { getFileById } from "@/models/files"
 import fs from "fs/promises"
@@ -26,9 +27,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
       return new NextResponse("File not found or does not belong to the user", { status: 404 })
     }
 
-    // Check if file exists on disk
-    const fullFilePath = fullPathForFile(user, file)
-    const isFileExists = await fileExists(fullFilePath)
+    // Ensure original file exists locally (download from storage if needed)
+    let fullFilePath = fullPathForFile(user, file)
+    let isFileExists = await fileExists(fullFilePath)
+    if (!isFileExists && process.env.STORAGE_PROVIDER === "supabase") {
+      try {
+        fullFilePath = await storage.downloadToLocal(user, file.path)
+        isFileExists = await fileExists(fullFilePath)
+      } catch (err) {
+        return new NextResponse(`File not found in storage: ${file.path}`, { status: 404 })
+      }
+    }
     if (!isFileExists) {
       return new NextResponse(`File not found on disk: ${file.path}`, { status: 404 })
     }

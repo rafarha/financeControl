@@ -69,7 +69,10 @@ export async function restoreBackupAction(
     // Remove existing data
     if (REMOVE_EXISTING_DATA) {
       await cleanupUserTables(user.id)
-      await fs.rm(userUploadsDirectory, { recursive: true, force: true })
+      // Remove user files from storage (local or remote)
+      // storage adapter will handle removal for supabase
+      const storageModule = await import("@/lib/storage")
+      await storageModule.removePrefix(user, "")
     }
 
     const counters: Record<string, number> = {}
@@ -117,8 +120,9 @@ export async function restoreBackupAction(
         }
 
         try {
-          await fs.mkdir(path.dirname(fullFilePath), { recursive: true })
-          await fs.writeFile(fullFilePath, fileContents)
+          // Upload file to storage (local adapter writes to disk)
+          const storageModule = await import("@/lib/storage")
+          await storageModule.uploadBuffer(user, filePathWithoutPrefix, fileContents)
           restoredFilesCount++
         } catch (error) {
           console.error(`Error writing file ${fullFilePath}:`, error)
