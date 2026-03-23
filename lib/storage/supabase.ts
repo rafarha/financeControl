@@ -17,8 +17,9 @@ export async function uploadBuffer(key: string, buffer: Buffer, contentType?: st
     upsert: false,
   } as any)
   if (error) throw error
-  const { publicURL } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(key)
-  return { path: key, url: publicURL, size: buffer.length }
+  const { data } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(key)
+  const publicUrl = (data as any)?.publicUrl || null
+  return { path: key, url: publicUrl, size: buffer.length }
 }
 
 export async function downloadBuffer(key: string) {
@@ -62,6 +63,6 @@ export async function removePrefix(prefix: string) {
 }
 
 export function getPublicUrl(key: string) {
-  const { publicURL } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(key)
-  return publicURL
+  const { data } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(key)
+  return (data as any)?.publicUrl || null
 }
