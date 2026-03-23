@@ -1,9 +1,17 @@
 import { File, Transaction, User } from "@/prisma/client"
 import { access, constants, readdir, stat } from "fs/promises"
 import path from "path"
+import os from "os"
 import config from "./config"
 
-export const FILE_UPLOAD_PATH = path.resolve(process.env.UPLOAD_PATH || "./uploads")
+// On serverless platforms (Vercel/AWS Lambda) the project filesystem is read-only
+// and writing to ./data or ./uploads (which resolves to /var/task/...) will fail.
+// When running with STORAGE_PROVIDER='supabase' or on known serverless envs,
+// prefer the OS temp directory for any local file work (previews, temp download).
+const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME || !!process.env.FUNCTIONS_WORKER_RUNTIME
+const useTmpForUploads = process.env.STORAGE_PROVIDER === "supabase" || isServerless
+const defaultUploadPath = useTmpForUploads ? os.tmpdir() : "./uploads"
+export const FILE_UPLOAD_PATH = path.resolve(useTmpForUploads ? defaultUploadPath : process.env.UPLOAD_PATH || defaultUploadPath)
 export const FILE_UNSORTED_DIRECTORY_NAME = "unsorted"
 export const FILE_PREVIEWS_DIRECTORY_NAME = "previews"
 export const FILE_STATIC_DIRECTORY_NAME = "static"
