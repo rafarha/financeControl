@@ -12,11 +12,33 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 export async function uploadBuffer(key: string, buffer: Buffer, contentType?: string) {
   // key is expected to be user-scoped, e.g. 'user@example.com/unsorted/uuid.pdf'
-  const { error } = await supabase.storage.from(SUPABASE_BUCKET).upload(key, buffer, {
-    contentType: contentType || undefined,
-    upsert: false,
-  } as any)
-  if (error) throw error
+  try {
+    // Supabase client expects a File/Blob/ReadableStream in some runtimes.
+    // Convert Node Buffer -> Blob when available to avoid invalid content-type issues.
+    let payload: any = buffer
+    try {
+      if (typeof Blob !== "undefined" && Buffer.isBuffer(buffer)) {
+        // Convert Buffer -> Uint8Array first to satisfy Blob constructor typing in Node
+  const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+  payload = new Blob([uint8 as any], { type: contentType || undefined } as any)
+      }
+    } catch (e) {
+      // ignore conversion errors and fall back to Buffer
+      payload = buffer
+    }
+
+    const { error } = await supabase.storage.from(SUPABASE_BUCKET).upload(key, payload, {
+      contentType: contentType || undefined,
+      upsert: false,
+    } as any)
+    if (error) throw error
+  } catch (err: any) {
+    // Surface more helpful message for 415 from Supabase
+    if (err && err.status === 415) {
+      throw new Error(`StorageApiError: Invalid Content-Type header when uploading ${key} (${contentType})`)
+    }
+    throw err
+  }
   const { data } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(key)
   const publicUrl = (data as any)?.publicUrl || null
   return { path: key, url: publicUrl, size: buffer.length }
