@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/db"
 import { unlink } from "fs/promises"
 import path from "path"
+import * as storage from "@/lib/storage"
+import { getUserById } from "./users"
 import { cache } from "react"
 import { getTransactionById } from "./transactions"
 
@@ -74,7 +76,10 @@ export const deleteFile = async (id: string, userId: string) => {
   }
 
   try {
-    await unlink(path.resolve(path.normalize(file.path)))
+    const user = await getUserById(userId)
+    if (user) {
+      await storage.deleteFile(user, file.path)
+    }
   } catch (error) {
     console.error("Error deleting file:", error)
   }

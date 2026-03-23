@@ -2,6 +2,7 @@ import { fileExists, fullPathForFile } from "@/lib/files"
 import { generateFilePreviews } from "@/lib/previews/generate"
 import { File, User } from "@/prisma/client"
 import fs from "fs/promises"
+import * as storage from "@/lib/storage"
 
 const MAX_PAGES_TO_ANALYZE = 4
 
@@ -12,10 +13,15 @@ export type AnalyzeAttachment = {
 }
 
 export const loadAttachmentsForAI = async (user: User, file: File): Promise<AnalyzeAttachment[]> => {
-  const fullFilePath = fullPathForFile(user, file)
-  const isFileExists = await fileExists(fullFilePath)
+  let fullFilePath = fullPathForFile(user, file)
+  let isFileExists = await fileExists(fullFilePath)
   if (!isFileExists) {
-    throw new Error("File not found on disk")
+    // Try to download locally from storage provider
+    fullFilePath = await storage.downloadToLocal(user, file.path)
+    isFileExists = await fileExists(fullFilePath)
+    if (!isFileExists) {
+      throw new Error("File not found on disk or storage")
+    }
   }
 
   const { contentType, previews } = await generateFilePreviews(user, fullFilePath, file.mimetype)

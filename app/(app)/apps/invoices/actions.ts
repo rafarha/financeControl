@@ -14,6 +14,7 @@ import { Transaction, User } from "@/prisma/client"
 import { renderToBuffer } from "@react-pdf/renderer"
 import { randomUUID } from "crypto"
 import { mkdir, writeFile } from "fs/promises"
+import * as storage from "@/lib/storage"
 import { revalidatePath } from "next/cache"
 import path from "path"
 import { createElement } from "react"
@@ -91,11 +92,7 @@ export async function saveInvoiceAsTransactionAction(
     const fileUuid = randomUUID()
     const fileName = `invoice-${formData.invoiceNumber}.pdf`
     const relativeFilePath = getTransactionFileUploadPath(fileUuid, fileName, transaction)
-    const userUploadsDirectory = getUserUploadsDirectory(user)
-    const fullFilePath = safePathJoin(userUploadsDirectory, relativeFilePath)
-
-    await mkdir(path.dirname(fullFilePath), { recursive: true })
-    await writeFile(fullFilePath, pdfBuffer)
+  await storage.uploadBuffer(user, relativeFilePath, Buffer.from(pdfBuffer), "application/pdf")
 
     // Create file record in database
     const fileRecord = await createFile(user.id, {

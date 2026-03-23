@@ -9,6 +9,7 @@ import {
   safePathJoin,
   unsortedFilePath,
 } from "@/lib/files"
+import * as storage from "@/lib/storage"
 import { createFile } from "@/models/files"
 import { updateUser } from "@/models/users"
 import { randomUUID } from "crypto"
@@ -43,7 +44,7 @@ export async function uploadFilesAction(formData: FormData): Promise<ActionState
         return { success: false, error: "Invalid file" }
       }
 
-      // Save file to filesystem
+      // Save file (local or storage provider)
       const fileUuid = randomUUID()
       const relativeFilePath = unsortedFilePath(fileUuid, file.name)
       const arrayBuffer = await file.arrayBuffer()
@@ -52,7 +53,7 @@ export async function uploadFilesAction(formData: FormData): Promise<ActionState
       const fullFilePath = safePathJoin(userUploadsDirectory, relativeFilePath)
       await mkdir(path.dirname(fullFilePath), { recursive: true })
 
-      await writeFile(fullFilePath, buffer)
+      await storage.uploadBuffer(user, relativeFilePath, buffer, file.type)
 
       // Create file record in database
       const fileRecord = await createFile(user.id, {
@@ -70,8 +71,13 @@ export async function uploadFilesAction(formData: FormData): Promise<ActionState
     })
   )
 
-  const storageUsed = await getDirectorySize(getUserUploadsDirectory(user))
-  await updateUser(user.id, { storageUsed })
+  if (process.env.STORAGE_PROVIDER === "supabase") {
+    // increment storageUsed in DB (approximate)
+    await updateUser(user.id, { storageUsed: { increment: totalFileSize } } as any)
+  } else {
+    const storageUsed = await getDirectorySize(getUserUploadsDirectory(user))
+    await updateUser(user.id, { storageUsed })
+  }
 
   console.log("uploadedFiles", uploadedFiles)
 

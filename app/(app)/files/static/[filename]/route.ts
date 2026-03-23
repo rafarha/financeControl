@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth"
 import { fileExists, getStaticDirectory, safePathJoin } from "@/lib/files"
+import * as storage from "@/lib/storage"
 import fs from "fs/promises"
 import lookup from "mime-types"
 import { NextResponse } from "next/server"
@@ -16,12 +17,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
 
   try {
     const fullFilePath = safePathJoin(staticFilesDirectory, filename)
+    let fileBuffer: Buffer
     const isFileExists = await fileExists(fullFilePath)
-    if (!isFileExists) {
+    if (isFileExists) {
+      fileBuffer = await fs.readFile(fullFilePath)
+    } else if (process.env.STORAGE_PROVIDER === "supabase") {
+      try {
+        fileBuffer = await storage.downloadBuffer(user, filename)
+      } catch (err) {
+        return new NextResponse(`File not found for user: ${filename}`, { status: 404 })
+      }
+    } else {
       return new NextResponse(`File not found for user: ${filename}`, { status: 404 })
     }
-
-    const fileBuffer = await fs.readFile(fullFilePath)
 
     return new NextResponse(fileBuffer, {
       headers: {

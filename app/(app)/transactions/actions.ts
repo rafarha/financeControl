@@ -24,6 +24,7 @@ import { updateUser } from "@/models/users"
 import { Transaction } from "@/prisma/client"
 import { randomUUID } from "crypto"
 import { mkdir, writeFile } from "fs/promises"
+import * as storage from "@/lib/storage"
 import { revalidatePath } from "next/cache"
 import path from "path"
 
@@ -137,7 +138,7 @@ export async function uploadTransactionFilesAction(formData: FormData): Promise<
       return { success: false, error: "Transaction not found" }
     }
 
-    const userUploadsDirectory = getUserUploadsDirectory(user)
+  const userUploadsDirectory = getUserUploadsDirectory(user)
 
     // Check limits
     const totalFileSize = files.reduce((acc, file) => acc + file.size, 0)
@@ -159,10 +160,7 @@ export async function uploadTransactionFilesAction(formData: FormData): Promise<
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        const fullFilePath = safePathJoin(userUploadsDirectory, relativeFilePath)
-        await mkdir(path.dirname(fullFilePath), { recursive: true })
-
-        await writeFile(fullFilePath, buffer)
+  await storage.uploadBuffer(user, relativeFilePath, buffer, file.type)
 
         // Create file record in database
         const fileRecord = await createFile(user.id, {
@@ -190,9 +188,12 @@ export async function uploadTransactionFilesAction(formData: FormData): Promise<
         : fileRecords.map((file) => file.id)
     )
 
-    // Update user storage used
-    const storageUsed = await getDirectorySize(getUserUploadsDirectory(user))
-    await updateUser(user.id, { storageUsed })
+    if (process.env.STORAGE_PROVIDER === "supabase") {
+      await updateUser(user.id, { storageUsed: { increment: totalFileSize } } as any)
+    } else {
+      const storageUsed = await getDirectorySize(getUserUploadsDirectory(user))
+      await updateUser(user.id, { storageUsed })
+    }
 
     revalidatePath(`/transactions/${transactionId}`)
     return { success: true }

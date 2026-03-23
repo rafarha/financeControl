@@ -8,6 +8,7 @@ import { getTransactions } from "@/models/transactions"
 import { format } from "@fast-csv/format"
 import { formatDate } from "date-fns"
 import fs from "fs/promises"
+import * as storage from "@/lib/storage"
 import JSZip from "jszip"
 import { NextResponse } from "next/server"
 import path from "path"
@@ -133,11 +134,12 @@ export async function GET(request: Request) {
 
         for (const file of transactionFiles) {
           const fullFilePath = fullPathForFile(user, file)
+          let fileData: Buffer | null = null
           if (await fileExists(fullFilePath)) {
             console.log(
               `Processing file ${++totalFilesProcessed}/${totalFilesToProcess}: ${file.filename} for transaction ${transaction.id}`
             )
-            const fileData = await fs.readFile(fullFilePath)
+            fileData = await fs.readFile(fullFilePath)
             const fileExtension = path.extname(fullFilePath)
             transactionFolder.file(
               `${formatDate(transaction.issuedAt || new Date(), "yyyy-MM-dd")} - ${
@@ -151,6 +153,19 @@ export async function GET(request: Request) {
             if (progressId && now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL_MS) {
               await updateProgress(user.id, progressId, { current: totalFilesProcessed })
               lastProgressUpdate = now
+            }
+          } else if (process.env.STORAGE_PROVIDER === "supabase") {
+            try {
+              fileData = await storage.downloadBuffer(user, file.path)
+              const fileExtension = path.extname(file.path)
+              transactionFolder.file(
+                `${formatDate(transaction.issuedAt || new Date(), "yyyy-MM-dd")} - ${
+                  transaction.name || transaction.id
+                }${fileExtension}`,
+                fileData
+              )
+            } catch (err) {
+              console.log(`Skipping missing file in storage: ${file.filename} for transaction ${transaction.id}`)
             }
           } else {
             console.log(`Skipping missing file: ${file.filename} for transaction ${transaction.id}`)
