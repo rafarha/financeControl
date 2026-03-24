@@ -9,6 +9,7 @@ import { FormSelectType } from "@/components/forms/select-type"
 import { FormInput, FormTextarea } from "@/components/forms/simple"
 import { Button } from "@/components/ui/button"
 import { Category, Currency, Project } from "@/prisma/client"
+import { TransactionData } from "@/models/transactions"
 import { format } from "date-fns"
 import { Import, Loader2 } from "lucide-react"
 import Link from "next/link"
@@ -20,28 +21,30 @@ export default function TransactionCreateForm({
   projects,
   currencies,
   settings,
+  initialValues,
 }: {
   categories: Category[]
   projects: Project[]
   currencies: Currency[]
   settings: Record<string, string>
+  initialValues?: Partial<TransactionData>
 }) {
   const router = useRouter()
   const [createState, createAction, isCreating] = useActionState(createTransactionAction, null)
-  const [formData, setFormData] = useState({
-    name: "",
-    merchant: "",
-    description: "",
-    total: 0.0,
-    convertedTotal: 0.0,
-    currencyCode: settings.default_currency,
-    convertedCurrencyCode: settings.default_currency,
-    type: settings.default_type,
-    categoryCode: settings.default_category,
-    projectCode: settings.default_project,
-    issuedAt: format(new Date(), "yyyy-MM-dd"),
-    note: "",
-  })
+  const [formData, setFormData] = useState(() => ({
+    name: initialValues?.name ?? "",
+    merchant: initialValues?.merchant ?? "",
+    description: initialValues?.description ?? "",
+    total: typeof initialValues?.total === "number" ? (initialValues?.total as number) : initialValues?.total ? Number(initialValues?.total) : 0.0,
+    convertedTotal: typeof initialValues?.convertedTotal === "number" ? (initialValues?.convertedTotal as number) : initialValues?.convertedTotal ? Number(initialValues?.convertedTotal) : 0.0,
+    currencyCode: (initialValues?.currencyCode as string) ?? settings.default_currency,
+    convertedCurrencyCode: (initialValues?.convertedCurrencyCode as string) ?? settings.default_currency,
+    type: (initialValues?.type as string) ?? settings.default_type,
+    categoryCode: (initialValues?.categoryCode as string) ?? settings.default_category,
+    projectCode: (initialValues?.projectCode as string) ?? settings.default_project,
+    issuedAt: initialValues?.issuedAt ? format(new Date(initialValues?.issuedAt as string), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+    note: initialValues?.note ?? "",
+  }))
 
   useEffect(() => {
     if (createState?.success && createState.data) {

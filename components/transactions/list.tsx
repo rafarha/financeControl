@@ -305,14 +305,25 @@ export function TransactionList({ transactions, fields = [] }: { transactions: T
               onClick={() => handleRowClick(transaction.id)}
             >
               <TableCell onClick={(e) => e.stopPropagation()}>
-                <Checkbox
-                  checked={selectedIds.includes(transaction.id)}
-                  onCheckedChange={(checked) => {
-                    if (checked !== "indeterminate") {
-                      toggleOneRow({ stopPropagation: () => {} } as React.MouseEvent, transaction.id)
-                    }
-                  }}
-                />
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedIds.includes(transaction.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked !== "indeterminate") {
+                        toggleOneRow({ stopPropagation: () => {} } as React.MouseEvent, transaction.id)
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/transactions?from=${transaction.id}`)
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Duplicate
+                  </button>
+                </div>
               </TableCell>
               {visibleFields.map((field) => (
                 <TableCell key={field.code} className={field.renderer.classes}>

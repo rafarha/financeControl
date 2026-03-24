@@ -22,7 +22,8 @@ export const metadata: Metadata = {
 const TRANSACTIONS_PER_PAGE = 500
 
 export default async function TransactionsPage({ searchParams }: { searchParams: Promise<TransactionFilters> }) {
-  const { page, ...filters } = await searchParams
+  const sp = await searchParams
+  const { page, from, ...filters } = sp as unknown as Record<string, any>
   const user = await getCurrentUser()
   const { transactions, total } = await getTransactions(user.id, filters, {
     limit: TRANSACTIONS_PER_PAGE,
@@ -49,7 +50,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
           <ExportTransactionsDialog fields={fields} categories={categories} projects={projects} total={total}>
             <Download /> <span className="hidden md:block">Export</span>
           </ExportTransactionsDialog>
-          <NewTransactionDialog>
+          <NewTransactionDialog fromTransactionId={from}>
             <Plus /> <span className="hidden md:block">Add Transaction</span>
           </NewTransactionDialog>
         </div>
@@ -71,7 +72,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
               <UploadButton>
                 <Upload /> Analyze New Invoice
               </UploadButton>
-              <NewTransactionDialog>
+              <NewTransactionDialog fromTransactionId={from}>
                 <Button variant="outline">
                   <Plus />
                   Add Manually
