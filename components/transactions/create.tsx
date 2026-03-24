@@ -35,8 +35,28 @@ export default function TransactionCreateForm({
     name: initialValues?.name ?? "",
     merchant: initialValues?.merchant ?? "",
     description: initialValues?.description ?? "",
-    total: typeof initialValues?.total === "number" ? (initialValues?.total as number) : initialValues?.total ? Number(initialValues?.total) : 0.0,
-    convertedTotal: typeof initialValues?.convertedTotal === "number" ? (initialValues?.convertedTotal as number) : initialValues?.convertedTotal ? Number(initialValues?.convertedTotal) : 0.0,
+    total: (() => {
+      const v: any = initialValues?.total
+      if (v == null) return 0.0
+      if (typeof v === "number") return v / 100
+      if (typeof v === "string") {
+        if (v.includes(".")) return Number(v)
+        const n = Number(v)
+        return Number.isNaN(n) ? 0.0 : n / 100
+      }
+      return 0.0
+    })(),
+    convertedTotal: (() => {
+      const v: any = initialValues?.convertedTotal
+      if (v == null) return 0.0
+      if (typeof v === "number") return v / 100
+      if (typeof v === "string") {
+        if (v.includes(".")) return Number(v)
+        const n = Number(v)
+        return Number.isNaN(n) ? 0.0 : n / 100
+      }
+      return 0.0
+    })(),
     currencyCode: (initialValues?.currencyCode as string) ?? settings.default_currency,
     convertedCurrencyCode: (initialValues?.convertedCurrencyCode as string) ?? settings.default_currency,
     type: (initialValues?.type as string) ?? settings.default_type,

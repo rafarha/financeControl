@@ -68,12 +68,15 @@ export function BulkActionsMenu({ selectedIds, onActionComplete, categories = []
         projects={projects}
         settings={settings}
         initialValues={initialValues}
+        onClose={() => setInitialValues(undefined)}
       />
 
-      <Button className="min-w-48 gap-2" disabled={selectedIds.length === 0} onClick={handleDuplicate}>
-        <Copy className="h-4 w-4" />
-        Duplicate
-      </Button>
+      {selectedIds.length === 1 && (
+        <Button className="min-w-48 gap-2" onClick={handleDuplicate}>
+          <Copy className="h-4 w-4" />
+          Duplicate
+        </Button>
+      )}
       <Button variant="destructive" className="min-w-48 gap-2" disabled={isLoading} onClick={handleDelete}>
         <Trash2 className="h-4 w-4" />
         Delete {selectedIds.length} transactions

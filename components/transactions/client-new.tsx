@@ -21,6 +21,7 @@ export default function ClientNewTransactionDialog({
   projects,
   settings,
   initialValues,
+  onClose,
 }: {
   children?: React.ReactNode
   categories: Category[]
@@ -28,12 +29,19 @@ export default function ClientNewTransactionDialog({
   projects: Project[]
   settings: Record<string, string>
   initialValues?: Partial<TransactionData>
+  onClose?: () => void
 }) {
   const [open, setOpen] = React.useState<boolean>(Boolean(initialValues))
 
   React.useEffect(() => {
     setOpen(Boolean(initialValues))
   }, [initialValues])
+
+  React.useEffect(() => {
+    if (!open && typeof onClose === "function") {
+      onClose()
+    }
+  }, [open, onClose])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
