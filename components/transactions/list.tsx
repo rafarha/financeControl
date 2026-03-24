@@ -179,7 +179,21 @@ const getFieldRenderer = (field: Field): FieldRenderer => {
   }
 }
 
-export function TransactionList({ transactions, fields = [] }: { transactions: Transaction[]; fields?: Field[] }) {
+export function TransactionList({
+  transactions,
+  fields = [],
+  categories,
+  currencies,
+  projects,
+  settings,
+}: {
+  transactions: Transaction[]
+  fields?: Field[]
+  categories?: Category[]
+  currencies?: { id: string; code: string }[]
+  projects?: Project[]
+  settings?: Record<string, string>
+}) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -305,25 +319,14 @@ export function TransactionList({ transactions, fields = [] }: { transactions: T
               onClick={() => handleRowClick(transaction.id)}
             >
               <TableCell onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={selectedIds.includes(transaction.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked !== "indeterminate") {
-                        toggleOneRow({ stopPropagation: () => {} } as React.MouseEvent, transaction.id)
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      router.push(`/transactions?from=${transaction.id}`)
-                    }}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Duplicate
-                  </button>
-                </div>
+                <Checkbox
+                  checked={selectedIds.includes(transaction.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked !== "indeterminate") {
+                      toggleOneRow({ stopPropagation: () => {} } as React.MouseEvent, transaction.id)
+                    }
+                  }}
+                />
               </TableCell>
               {visibleFields.map((field) => (
                 <TableCell key={field.code} className={field.renderer.classes}>
@@ -345,7 +348,14 @@ export function TransactionList({ transactions, fields = [] }: { transactions: T
         </TableFooter>
       </Table>
       {selectedIds.length > 0 && (
-        <BulkActionsMenu selectedIds={selectedIds} onActionComplete={() => setSelectedIds([])} />
+        <BulkActionsMenu
+          selectedIds={selectedIds}
+          onActionComplete={() => setSelectedIds([])}
+          categories={categories}
+          currencies={currencies as any}
+          projects={projects}
+          settings={settings}
+        />
       )}
     </div>
   )

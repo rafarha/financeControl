@@ -22,7 +22,7 @@ export default function ClientNewTransactionDialog({
   settings,
   initialValues,
 }: {
-  children: React.ReactNode
+  children?: React.ReactNode
   categories: Category[]
   currencies: Currency[]
   projects: Project[]
@@ -31,11 +31,17 @@ export default function ClientNewTransactionDialog({
 }) {
   const [open, setOpen] = React.useState<boolean>(Boolean(initialValues))
 
+  React.useEffect(() => {
+    setOpen(Boolean(initialValues))
+  }, [initialValues])
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>{children}</Button>
-      </DialogTrigger>
+      {children ? (
+        <DialogTrigger asChild>
+          <Button>{children}</Button>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">New Transaction</DialogTitle>
