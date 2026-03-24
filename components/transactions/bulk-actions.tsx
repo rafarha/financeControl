@@ -49,9 +49,12 @@ export function BulkActionsMenu({ selectedIds, onActionComplete, categories = []
     if (!selectedIds || selectedIds.length === 0) return
     const first = selectedIds[0]
     try {
+      console.log("bulk-actions: fetching transaction", first)
+      
       const res = await fetch(`/api/transactions/${first}`)
       if (!res.ok) throw new Error("Failed to fetch transaction")
       const tx = await res.json()
+      console.log("bulk-actions: fetched transaction", tx)
       setInitialValues(tx)
     } catch (err) {
       console.error("Failed to fetch transaction for duplicate:", err)

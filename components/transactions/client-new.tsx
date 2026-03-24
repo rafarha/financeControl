@@ -38,6 +38,15 @@ export default function ClientNewTransactionDialog({
   }, [initialValues])
 
   React.useEffect(() => {
+    console.log("client-new: initialValues changed", initialValues)
+    console.log("client-new: open state", open)
+    // fallback: if initialValues exists but open is false, force open
+    if (initialValues && !open) {
+      setOpen(true)
+    }
+  }, [initialValues, open])
+
+  React.useEffect(() => {
     if (!open && typeof onClose === "function") {
       onClose()
     }
