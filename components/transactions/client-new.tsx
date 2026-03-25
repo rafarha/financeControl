@@ -22,6 +22,8 @@ export default function ClientNewTransactionDialog({
   settings,
   initialValues,
   onClose,
+  open,
+  onOpenChange,
 }: {
   children?: React.ReactNode
   categories: Category[]
@@ -30,30 +32,41 @@ export default function ClientNewTransactionDialog({
   settings: Record<string, string>
   initialValues?: Partial<TransactionData>
   onClose?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
-  const [open, setOpen] = React.useState<boolean>(Boolean(initialValues))
+  const [internalOpen, setInternalOpen] = React.useState<boolean>(Boolean(initialValues))
+
+  const isControlled = typeof open !== "undefined"
+  const dialogOpen = isControlled ? (open as boolean) : internalOpen
 
   React.useEffect(() => {
-    setOpen(Boolean(initialValues))
-  }, [initialValues])
+    if (!isControlled) setInternalOpen(Boolean(initialValues))
+  }, [initialValues, isControlled])
 
   React.useEffect(() => {
     console.log("client-new: initialValues changed", initialValues)
-    console.log("client-new: open state", open)
-    // fallback: if initialValues exists but open is false, force open
-    if (initialValues && !open) {
-      setOpen(true)
+    console.log("client-new: open state", dialogOpen)
+    // fallback: if initialValues exists but open is false, force open for uncontrolled
+    if (initialValues && !dialogOpen && !isControlled) {
+      setInternalOpen(true)
     }
-  }, [initialValues, open])
+  }, [initialValues, dialogOpen, isControlled])
 
   React.useEffect(() => {
-    if (!open && typeof onClose === "function") {
+    if (!dialogOpen && typeof onClose === "function") {
       onClose()
     }
-  }, [open, onClose])
+  }, [dialogOpen, onClose])
+
+  const handleOpenChange = (v: boolean) => {
+    if (!isControlled) setInternalOpen(v)
+    if (onOpenChange) onOpenChange(v)
+    if (!v && typeof onClose === "function") onClose()
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+  <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       {children ? (
         <DialogTrigger asChild>
           <Button>{children}</Button>

@@ -24,6 +24,7 @@ export function BulkActionsMenu({ selectedIds, onActionComplete, categories = []
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const [initialValues, setInitialValues] = useState<any | undefined>(undefined)
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false)
 
   const handleDelete = async () => {
     const confirmMessage =
@@ -49,13 +50,14 @@ export function BulkActionsMenu({ selectedIds, onActionComplete, categories = []
     if (!selectedIds || selectedIds.length === 0) return
     const first = selectedIds[0]
     try {
-      console.log("bulk-actions: fetching transaction", first)
-      
-      const res = await fetch(`/api/transactions/${first}`)
-      if (!res.ok) throw new Error("Failed to fetch transaction")
-      const tx = await res.json()
+  console.log("bulk-actions: fetching transaction", first)
+  const res = await fetch(`/api/transactions/${first}`, { credentials: "same-origin" })
+  console.log("bulk-actions: fetch status", res.status)
+  if (!res.ok) throw new Error(`Failed to fetch transaction: ${res.status}`)
+  const tx = await res.json()
       console.log("bulk-actions: fetched transaction", tx)
       setInitialValues(tx)
+      setDialogOpen(true)
     } catch (err) {
       console.error("Failed to fetch transaction for duplicate:", err)
       alert("Failed to fetch transaction for duplicate")
@@ -71,7 +73,11 @@ export function BulkActionsMenu({ selectedIds, onActionComplete, categories = []
         projects={projects}
         settings={settings}
         initialValues={initialValues}
-        onClose={() => setInitialValues(undefined)}
+        open={dialogOpen}
+        onOpenChange={(v) => {
+          setDialogOpen(v)
+          if (!v) setInitialValues(undefined)
+        }}
       />
 
       {selectedIds.length === 1 && (
@@ -84,6 +90,13 @@ export function BulkActionsMenu({ selectedIds, onActionComplete, categories = []
         <Trash2 className="h-4 w-4" />
         Delete {selectedIds.length} transactions
       </Button>
+      {process.env.NODE_ENV !== "production" && (
+        <div className="fixed bottom-20 right-4 z-50 p-2 bg-white border rounded text-xs w-64 max-h-40 overflow-auto">
+          <div className="font-semibold">Debug (dev):</div>
+          <div>dialogOpen: {String(dialogOpen)}</div>
+          <div>initialValues: {initialValues ? JSON.stringify(initialValues).slice(0, 200) : "(none)"}</div>
+        </div>
+      )}
     </div>
   )
 }
