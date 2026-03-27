@@ -1,7 +1,7 @@
 import { TransactionFilters } from "@/models/transactions"
 import { format } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 
 const filterKeys = ["search", "dateFrom", "dateTo", "ordering", "categoryCode", "projectCode"]
 
@@ -15,11 +15,54 @@ export function useTransactionFilters(defaultFilters?: TransactionFilters) {
 
   useEffect(() => {
     const newSearchParams = filtersToSearchParams(filters, searchParams)
-    router.push(`?${newSearchParams.toString()}`)
+    // Avoid pushing a new URL when the search params already match the
+    // computed params. This prevents update loops where changing filters
+    // causes a router.push which updates searchParams and then resets
+    // filters again.
+    const newParamsString = newSearchParams.toString()
+    const currentParamsString = searchParams ? searchParams.toString() : ""
+
+    // Debug: log when effect runs and the computed/current params
+    // eslint-disable-next-line no-console
+    console.debug("useTransactionFilters: effect run", { filters, newParamsString, currentParamsString })
+
+    if (newParamsString !== currentParamsString) {
+      // Debounce rapid pushes to avoid a burst of navigations when multiple
+      // filter updates happen in quick succession (e.g. while selecting a
+      // date range). This prevents the "one request per day" symptom.
+      const delay = 120
+      const pending = (useTransactionFilters as any).__pendingPushRef as React.MutableRefObject<number | undefined>
+      if (!pending) {
+        ;(useTransactionFilters as any).__pendingPushRef = { current: undefined }
+      }
+      const ref = (useTransactionFilters as any).__pendingPushRef as React.MutableRefObject<number | undefined>
+      if (ref.current) {
+        window.clearTimeout(ref.current)
+      }
+      ref.current = window.setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.debug("useTransactionFilters: performing router.push", `?${newParamsString}`)
+        router.push(`?${newParamsString}`)
+        ref.current = undefined
+      }, delay)
+    }
   }, [filters])
 
   useEffect(() => {
-    setFilters(searchParamsToFilters(searchParams))
+    const parsed = searchParamsToFilters(searchParams)
+    // Only update state when parsed filters differ from current filters to
+    // avoid triggering the filters->URL effect again.
+    const isEqual = (Object.keys(parsed) as Array<keyof TransactionFilters>).every((k) => {
+      const a = (parsed as any)[k] || ""
+      const b = (filters as any)[k] || ""
+      return a === b
+    })
+    // Debug: log parsed/current and whether we'll setFilters
+    // eslint-disable-next-line no-console
+    console.debug("useTransactionFilters: searchParams changed", { parsed, filters, isEqual })
+    if (!isEqual) {
+      setFilters(parsed)
+    }
   }, [searchParams])
 
   return [filters, setFilters] as const

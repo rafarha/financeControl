@@ -124,9 +124,15 @@ export function DateRangePicker({
           defaultMonth={dateRange?.from}
           selected={dateRange}
           onSelect={(newDateRange) => {
+            // When the user is selecting a range in the calendar, react-day-picker
+            // fires onSelect multiple times as the start/end are chosen. Only
+            // propagate the change to the parent when the range is complete
+            // (i.e. `to` is set) or when the selection is cleared.
             setRangeName("custom")
             setDateRange(newDateRange)
-            onChange?.(newDateRange)
+            if (!newDateRange || (newDateRange as any).to) {
+              onChange?.(newDateRange)
+            }
           }}
           numberOfMonths={2}
         />
