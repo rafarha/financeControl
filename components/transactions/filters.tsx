@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isFiltered, useTransactionFilters } from "@/hooks/use-transaction-filters"
 import { TransactionFilters } from "@/models/transactions"
 import { Category, Field, Project } from "@/prisma/client"
+import { format } from "date-fns"
 import { X } from "lucide-react"
 
 export function TransactionSearchAndFilters({
@@ -86,8 +87,14 @@ export function TransactionSearchAndFilters({
             to: filters.dateTo ? new Date(filters.dateTo) : undefined,
           }}
           onChange={(date) => {
-            handleFilterChange("dateFrom", date ? date.from : undefined)
-            handleFilterChange("dateTo", date ? date.to : undefined)
+            handleFilterChange(
+              "dateFrom",
+              date?.from ? format(date.from, "yyyy-MM-dd") : undefined
+            )
+            handleFilterChange(
+              "dateTo",
+              date?.to ? format(date.to, "yyyy-MM-dd") : undefined
+            )
           }}
         />
 

@@ -67,10 +67,14 @@ export function DateRangePicker({
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDate)
 
   useEffect(() => {
-    if (!defaultDate?.from) {
-      setRangeName(defaultRange)
-      setDateRange(undefined)
+    if (defaultDate?.from || defaultDate?.to) {
+      setRangeName("custom")
+      setDateRange(defaultDate)
+      return
     }
+
+    setRangeName(defaultRange)
+    setDateRange(undefined)
   }, [defaultDate, defaultRange])
 
   const getDisplayText = () => {

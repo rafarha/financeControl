@@ -3,7 +3,7 @@ import { format } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 
-const filterKeys = ["search", "dateFrom", "dateTo", "ordering", "categoryCode", "projectCode"]
+const filterKeys = ["search", "dateFrom", "dateTo", "ordering", "categoryCode", "projectCode", "type"]
 
 export function useTransactionFilters(defaultFilters?: TransactionFilters) {
   const router = useRouter()
@@ -20,7 +20,7 @@ export function useTransactionFilters(defaultFilters?: TransactionFilters) {
     // causes a router.push which updates searchParams and then resets
     // filters again.
     const newParamsString = newSearchParams.toString()
-    const currentParamsString = searchParams ? searchParams.toString() : ""
+    const currentParamsString = normalizeSearchParams(searchParams).toString()
 
     // Debug: log when effect runs and the computed/current params
     // eslint-disable-next-line no-console
@@ -46,7 +46,7 @@ export function useTransactionFilters(defaultFilters?: TransactionFilters) {
         ref.current = undefined
       }, delay)
     }
-  }, [filters])
+  }, [filters, searchParams])
 
   useEffect(() => {
     const parsed = searchParamsToFilters(searchParams)
@@ -75,6 +75,15 @@ export function searchParamsToFilters(searchParams: URLSearchParams) {
   }, {} as Record<string, string>) as TransactionFilters
 }
 
+function normalizeSearchParams(searchParams: URLSearchParams) {
+  const normalized = new URLSearchParams()
+  searchParams.forEach((value, key) => {
+    if (key.startsWith("_")) return
+    normalized.set(key, value)
+  })
+  return normalized
+}
+
 export function filtersToSearchParams(
   filters: TransactionFilters,
   currentSearchParams?: URLSearchParams
@@ -83,7 +92,7 @@ export function filtersToSearchParams(
   const searchParams = new URLSearchParams()
   if (currentSearchParams) {
     currentSearchParams.forEach((value, key) => {
-      if (!filterKeys.includes(key)) {
+      if (!filterKeys.includes(key) && !key.startsWith("_")) {
         searchParams.set(key, value)
       }
     })
@@ -123,6 +132,12 @@ export function filtersToSearchParams(
     searchParams.set("projectCode", filters.projectCode)
   } else {
     searchParams.delete("projectCode")
+  }
+
+  if (filters.type) {
+    searchParams.set("type", filters.type)
+  } else {
+    searchParams.delete("type")
   }
 
   return searchParams
