@@ -36,8 +36,10 @@ export function ExportTransactionsDialog({
   children: React.ReactNode
 }) {
   const [exportFilters, setExportFilters] = useState({
+    search: undefined as string | undefined,
     dateFrom: undefined as string | undefined,
     dateTo: undefined as string | undefined,
+    ordering: undefined as string | undefined,
     categoryCode: undefined as string | undefined,
     projectCode: undefined as string | undefined,
   })
