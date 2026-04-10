@@ -3,6 +3,7 @@ import { UploadButton } from "@/components/files/upload-button"
 import { TransactionList } from "@/components/transactions/list"
 import { NewTransactionDialog } from "@/components/transactions/new"
 import { Pagination } from "@/components/transactions/pagination"
+import { TransactionFilters } from "@/components/transactions/transaction-filters"
 import { Button } from "@/components/ui/button"
 import { getCurrentUser } from "@/lib/auth"
 import { getCategories } from "@/models/categories"
@@ -13,6 +14,7 @@ import { getSettings } from "@/models/settings"
 import { getTransactions } from "@/models/transactions"
 import { Download, Plus, Upload } from "lucide-react"
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "Transactions",
@@ -21,13 +23,22 @@ export const metadata: Metadata = {
 
 const TRANSACTIONS_PER_PAGE = 500
 
-export default async function TransactionsPage(props: { searchParams: Promise<{ page?: string; from?: string }> }) {
+export default async function TransactionsPage(props: { searchParams: Promise<{ page?: string; from?: string; categoryCode?: string; startDate?: string; endDate?: string }> }) {
   const searchParams = await props.searchParams
   const page = parseInt(searchParams.page as string) || 1
   const from = searchParams.from
+  const categoryCode = searchParams.categoryCode
+  const startDate = searchParams.startDate
+  const endDate = searchParams.endDate
 
   const user = await getCurrentUser()
-  const { transactions, total } = await getTransactions(user.id, {}, {
+  const filters = {
+    ...(categoryCode && { categoryCode }),
+    ...(startDate && { dateFrom: startDate }),
+    ...(endDate && { dateTo: endDate }),
+  }
+
+  const { transactions, total } = await getTransactions(user.id, filters, {
     limit: TRANSACTIONS_PER_PAGE,
     offset: (page - 1) * TRANSACTIONS_PER_PAGE,
   })
@@ -55,7 +66,10 @@ export default async function TransactionsPage(props: { searchParams: Promise<{ 
         </div>
       </header>
 
+      <TransactionFilters categories={categories} />
+
       <main>
+        <Suspense fallback={<div>Loading transactions...</div>}>
         <TransactionList 
           transactions={transactions} 
           fields={fields} 
@@ -64,6 +78,7 @@ export default async function TransactionsPage(props: { searchParams: Promise<{ 
           currencies={currencies} 
           settings={settings} 
         />
+        </Suspense>
 
         {total > TRANSACTIONS_PER_PAGE && (
           <Pagination totalItems={total} itemsPerPage={TRANSACTIONS_PER_PAGE} />

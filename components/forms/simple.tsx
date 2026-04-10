@@ -108,7 +108,7 @@ export const FormSelect = ({
     (props.value as string | undefined) || (props.defaultValue as string | undefined)
   )
   const isControlled = props.value !== undefined
-  const selectValue = (isControlled ? (props.value as string | undefined) : internalValue) || ""
+  const selectValue = (isControlled ? (props.value as string | undefined) : internalValue) || undefined
   const isEmpty = !selectValue || selectValue.toString().trim() === ""
 
   const labelId = title ? `${id || name || "select"}-label` : undefined
@@ -131,11 +131,11 @@ export const FormSelect = ({
         </span>
       )}
       {/* Hidden input to ensure form submissions include this value */}
-      {name && <input type="hidden" name={name} value={selectValue} />}
+      {name && <input type="hidden" name={name} value={selectValue ?? ""} />}
       <Select
         {...props}
         onValueChange={handleChange}
-        {...(isControlled ? { value: props.value as string } : { defaultValue: props.defaultValue as string })}
+        {...(isControlled ? { value: props.value as string || undefined } : { defaultValue: (props.defaultValue as string) || undefined })}
       >
         <SelectTrigger
           id={controlId}
