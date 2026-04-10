@@ -1,10 +1,11 @@
+import { ExpensesLast6Months } from "@/components/dashboard/expenses-last-6-months"
 import { ProjectsWidget } from "@/components/dashboard/projects-widget"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCurrentUser } from "@/lib/auth"
 import { formatCurrency } from "@/lib/utils"
 import { getProjects } from "@/models/projects"
 import { getSettings } from "@/models/settings"
-import { getDashboardStats, getProjectStats } from "@/models/stats"
+import { getDashboardStats, getExpensesLast6Months, getProjectStats } from "@/models/stats"
 import { TransactionFilters } from "@/models/transactions"
 import { ArrowDown, ArrowUp, BicepsFlexed } from "lucide-react"
 import Link from "next/link"
@@ -16,6 +17,7 @@ export async function StatsWidget({ filters }: { filters: TransactionFilters }) 
   const defaultCurrency = settings.default_currency || "EUR"
 
   const stats = await getDashboardStats(user.id, filters)
+  const expensesLast6Months = await getExpensesLast6Months(user.id, defaultCurrency)
   const statsPerProject = Object.fromEntries(
     await Promise.all(
       projects.map((project) => getProjectStats(user.id, project.code, filters).then((stats) => [project.code, stats]))
@@ -92,6 +94,8 @@ export async function StatsWidget({ filters }: { filters: TransactionFilters }) 
           </Card>
         </Link>
       </div>
+
+      <ExpensesLast6Months data={expensesLast6Months} />
 
       <div>
         <h2 className="text-2xl font-bold">Projects</h2>

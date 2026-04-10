@@ -321,3 +321,75 @@ export const getDetailedTimeSeriesStats = cache(
       .sort((a, b) => a.date.getTime() - b.date.getTime())
   }
 )
+
+export type MonthlyExpensesData = {
+  month: string
+  year: number
+  monthName: string
+  totalExpenses: number
+  currency: string
+}
+
+export const getExpensesLast6Months = cache(
+  async (userId: string, defaultCurrency: string = "EUR"): Promise<MonthlyExpensesData[]> => {
+    const now = new Date()
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1) // Start from 6 months ago
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        type: "expense",
+        issuedAt: {
+          gte: sixMonthsAgo,
+          lte: now,
+        },
+      },
+      orderBy: { issuedAt: "asc" },
+    })
+
+    // Group by month
+    const monthlyData = new Map<string, { total: number; month: string; year: number }>()
+
+    transactions.forEach((transaction) => {
+      if (!transaction.issuedAt) return
+
+      const date = new Date(transaction.issuedAt)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, "0")
+
+      // Get amount in default currency
+      const amount =
+        transaction.convertedCurrencyCode?.toUpperCase() === defaultCurrency.toUpperCase()
+          ? transaction.convertedTotal || 0
+          : transaction.currencyCode?.toUpperCase() === defaultCurrency.toUpperCase()
+            ? transaction.total || 0
+            : 0 // Skip transactions not in default currency
+
+      if (!monthlyData.has(monthKey)) {
+        monthlyData.set(monthKey, { total: 0, month, year })
+      }
+
+      monthlyData.get(monthKey)!.total += amount
+    })
+
+    // Generate all 6 months even if no expenses
+    const result: MonthlyExpensesData[] = []
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+      const monthName = date.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+
+      const data = monthlyData.get(monthKey)
+      result.push({
+        month: String(date.getMonth() + 1).padStart(2, "0"),
+        year: date.getFullYear(),
+        monthName,
+        totalExpenses: data ? data.total : 0,
+        currency: defaultCurrency,
+      })
+    }
+
+    return result
+  }
+)
