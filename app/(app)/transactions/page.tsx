@@ -136,15 +136,3 @@ export default async function TransactionsPage(props: { searchParams: SearchPara
     </>
   )
 }
-
-                  <Plus />
-                  Add Manually
-                </Button>
-              </NewTransactionDialog>
-            </div>
-          </div>
-        )}
-      </main>
-    </>
-  )
-}
