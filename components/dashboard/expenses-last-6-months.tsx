@@ -10,8 +10,8 @@ interface ExpensesLast6MonthsProps {
 }
 
 export function ExpensesLast6Months({ data }: ExpensesLast6MonthsProps) {
-  const currentMonth = data[data.length - 1]
-  const previousMonth = data[data.length - 2]
+  const currentMonth = data[0] // First item is now the current month
+  const previousMonth = data[1] // Second item is the previous month
 
   const getTrend = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? "up" : "neutral"
@@ -49,7 +49,7 @@ export function ExpensesLast6Months({ data }: ExpensesLast6MonthsProps) {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {data.map((monthData, index) => {
-          const isCurrentMonth = index === data.length - 1
+          const isCurrentMonth = index === 0 // Current month is now the first item
           const trend = isCurrentMonth && previousMonth ? getTrend(monthData.totalExpenses, previousMonth.totalExpenses) : "neutral"
 
           return (

@@ -375,7 +375,7 @@ export const getExpensesLast6Months = cache(
 
     // Generate all 6 months even if no expenses
     const result: MonthlyExpensesData[] = []
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 0; i < 6; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       const monthName = date.toLocaleDateString("en-US", { month: "short", year: "numeric" })
