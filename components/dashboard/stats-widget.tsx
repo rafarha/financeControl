@@ -1,4 +1,3 @@
-import { FiltersWidget } from "@/components/dashboard/filters-widget"
 import { IncomeExpenseGraph } from "@/components/dashboard/income-expense-graph"
 import { ProjectsWidget } from "@/components/dashboard/projects-widget"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,12 +26,6 @@ export async function StatsWidget({ filters }: { filters: TransactionFilters }) 
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Overview</h2>
-
-        <FiltersWidget defaultFilters={filters} defaultRange="last-12-months" />
-      </div>
-
       {statsTimeSeries.length > 0 && <IncomeExpenseGraph data={statsTimeSeries} defaultCurrency={defaultCurrency} />}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
