@@ -1,9 +1,9 @@
 "use client"
 
 import { DateRangePicker } from "@/components/forms/date-range-picker"
-import { useTransactionFilters } from "@/hooks/use-transaction-filters"
 import { TransactionFilters } from "@/models/transactions"
 import { format } from "date-fns"
+import { useState } from "react"
 
 export function FiltersWidget({
   defaultFilters,
@@ -12,7 +12,7 @@ export function FiltersWidget({
   defaultFilters: TransactionFilters
   defaultRange?: string
 }) {
-  const [filters, setFilters] = useTransactionFilters(defaultFilters)
+  const [filters, setFilters] = useState(defaultFilters)
 
   return (
     <DateRangePicker

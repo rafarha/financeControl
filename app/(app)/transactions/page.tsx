@@ -1,6 +1,5 @@
 import { ExportTransactionsDialog } from "@/components/export/transactions"
 import { UploadButton } from "@/components/files/upload-button"
-import { TransactionSearchAndFilters } from "@/components/transactions/filters"
 import { TransactionList } from "@/components/transactions/list"
 import { NewTransactionDialog } from "@/components/transactions/new"
 import { Pagination } from "@/components/transactions/pagination"
@@ -11,7 +10,7 @@ import { getFields } from "@/models/fields"
 import { getProjects } from "@/models/projects"
 import { getCurrencies } from "@/models/currencies"
 import { getSettings } from "@/models/settings"
-import { getTransactions, TransactionFilters } from "@/models/transactions"
+import { getTransactions } from "@/models/transactions"
 import { Download, Plus, Upload } from "lucide-react"
 import { Metadata } from "next"
 
@@ -22,35 +21,13 @@ export const metadata: Metadata = {
 
 const TRANSACTIONS_PER_PAGE = 500
 
-type SearchParamsType = Promise<{
-  search?: string
-  dateFrom?: string
-  dateTo?: string
-  ordering?: string
-  categoryCode?: string
-  projectCode?: string
-  type?: string
-  page?: string
-  from?: string
-}>
-
-export default async function TransactionsPage(props: { searchParams: SearchParamsType }) {
+export default async function TransactionsPage(props: { searchParams: Promise<{ page?: string; from?: string }> }) {
   const searchParams = await props.searchParams
   const page = parseInt(searchParams.page as string) || 1
   const from = searchParams.from
 
-  const filters: TransactionFilters = {
-    search: searchParams.search,
-    dateFrom: searchParams.dateFrom,
-    dateTo: searchParams.dateTo,
-    ordering: searchParams.ordering,
-    categoryCode: searchParams.categoryCode,
-    projectCode: searchParams.projectCode,
-    type: searchParams.type,
-  }
-
   const user = await getCurrentUser()
-  const { transactions, total } = await getTransactions(user.id, filters, {
+  const { transactions, total } = await getTransactions(user.id, {}, {
     limit: TRANSACTIONS_PER_PAGE,
     offset: (page - 1) * TRANSACTIONS_PER_PAGE,
   })
@@ -60,21 +37,6 @@ export default async function TransactionsPage(props: { searchParams: SearchPara
   const fields = await getFields(user.id)
   const currencies = await getCurrencies(user.id)
   const settings = await getSettings(user.id)
-
-  // Reset page if user clicks a filter and no transactions are found
-  if (page > 1 && transactions.length === 0) {
-    const params = new URLSearchParams()
-    if (filters.search) params.set("search", filters.search)
-    if (filters.dateFrom) params.set("dateFrom", filters.dateFrom)
-    if (filters.dateTo) params.set("dateTo", filters.dateTo)
-    if (filters.ordering) params.set("ordering", filters.ordering)
-    if (filters.categoryCode) params.set("categoryCode", filters.categoryCode)
-    if (filters.projectCode) params.set("projectCode", filters.projectCode)
-    if (filters.type) params.set("type", filters.type)
-
-    const { redirect } = await import("next/navigation")
-    redirect(`?${params.toString()}`)
-  }
 
   return (
     <>
@@ -92,13 +54,6 @@ export default async function TransactionsPage(props: { searchParams: SearchPara
           </NewTransactionDialog>
         </div>
       </header>
-
-      <TransactionSearchAndFilters 
-        categories={categories} 
-        projects={projects} 
-        fields={fields}
-        currentFilters={filters}
-      />
 
       <main>
         <TransactionList 

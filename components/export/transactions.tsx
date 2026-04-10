@@ -16,7 +16,6 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useDownload } from "@/hooks/use-download"
 import { useProgress } from "@/hooks/use-progress"
-import { useTransactionFilters } from "@/hooks/use-transaction-filters"
 import { Category, Field, Project } from "@/prisma/client"
 import { formatDate } from "date-fns"
 import { useState } from "react"
@@ -36,7 +35,12 @@ export function ExportTransactionsDialog({
   total: number
   children: React.ReactNode
 }) {
-  const [exportFilters, setExportFilters] = useTransactionFilters()
+  const [exportFilters, setExportFilters] = useState({
+    dateFrom: undefined as string | undefined,
+    dateTo: undefined as string | undefined,
+    categoryCode: undefined as string | undefined,
+    projectCode: undefined as string | undefined,
+  })
   const [exportFields, setExportFields] = useState<string[]>(
     fields.map((field) => (deselectedFields.includes(field.code) ? "" : field.code))
   )

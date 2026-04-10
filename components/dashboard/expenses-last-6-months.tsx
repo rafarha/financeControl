@@ -4,14 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/utils"
 import { MonthlyExpensesData } from "@/models/stats"
 import { TrendingUp, TrendingDown } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 interface ExpensesLast6MonthsProps {
   data: MonthlyExpensesData[]
 }
 
 export function ExpensesLast6Months({ data }: ExpensesLast6MonthsProps) {
-  const router = useRouter()
   const currentMonth = data[0] // First item is now the current month
   const previousMonth = data[1] // Second item is the previous month
 
@@ -45,27 +43,6 @@ export function ExpensesLast6Months({ data }: ExpensesLast6MonthsProps) {
     }
   }
 
-  const getMonthDateRange = (monthData: MonthlyExpensesData) => {
-    const year = monthData.year
-    const month = parseInt(monthData.month)
-    
-    // First day of the month
-    const dateFrom = new Date(year, month - 1, 1)
-    
-    // Last day of the month
-    const dateTo = new Date(year, month, 0)
-    
-    return {
-      dateFrom: dateFrom.toISOString().split('T')[0], // YYYY-MM-DD
-      dateTo: dateTo.toISOString().split('T')[0]      // YYYY-MM-DD
-    }
-  }
-
-  const handleMonthClick = (monthData: MonthlyExpensesData) => {
-    const { dateFrom, dateTo } = getMonthDateRange(monthData)
-    router.push(`/transactions?dateFrom=${dateFrom}&dateTo=${dateTo}&type=expense`)
-  }
-
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Expenses - Last 6 Months</h2>
@@ -78,8 +55,7 @@ export function ExpensesLast6Months({ data }: ExpensesLast6MonthsProps) {
           return (
             <Card
               key={`${monthData.year}-${monthData.month}`}
-              className={`relative ${isCurrentMonth ? "ring-2 ring-blue-500 ring-opacity-50" : ""} cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02]`}
-              onClick={() => handleMonthClick(monthData)}
+              className={`relative ${isCurrentMonth ? "ring-2 ring-blue-500 ring-opacity-50" : ""}`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
