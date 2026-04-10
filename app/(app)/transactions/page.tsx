@@ -14,7 +14,6 @@ import { getSettings } from "@/models/settings"
 import { getTransactions, TransactionFilters } from "@/models/transactions"
 import { Download, Plus, Upload } from "lucide-react"
 import { Metadata } from "next"
-import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
   title: "Transactions",
@@ -23,14 +22,39 @@ export const metadata: Metadata = {
 
 const TRANSACTIONS_PER_PAGE = 500
 
-export default async function TransactionsPage({ searchParams }: { searchParams: Promise<TransactionFilters> }) {
-  const sp = await searchParams
-  const { page, from, ...filters } = sp as unknown as Record<string, any>
+type SearchParamsType = Promise<{
+  search?: string
+  dateFrom?: string
+  dateTo?: string
+  ordering?: string
+  categoryCode?: string
+  projectCode?: string
+  type?: string
+  page?: string
+  from?: string
+}>
+
+export default async function TransactionsPage(props: { searchParams: SearchParamsType }) {
+  const searchParams = await props.searchParams
+  const page = parseInt(searchParams.page as string) || 1
+  const from = searchParams.from
+
+  const filters: TransactionFilters = {
+    search: searchParams.search,
+    dateFrom: searchParams.dateFrom,
+    dateTo: searchParams.dateTo,
+    ordering: searchParams.ordering,
+    categoryCode: searchParams.categoryCode,
+    projectCode: searchParams.projectCode,
+    type: searchParams.type,
+  }
+
   const user = await getCurrentUser()
   const { transactions, total } = await getTransactions(user.id, filters, {
     limit: TRANSACTIONS_PER_PAGE,
-    offset: ((page ?? 1) - 1) * TRANSACTIONS_PER_PAGE,
+    offset: (page - 1) * TRANSACTIONS_PER_PAGE,
   })
+
   const categories = await getCategories(user.id)
   const projects = await getProjects(user.id)
   const fields = await getFields(user.id)
@@ -38,8 +62,17 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const settings = await getSettings(user.id)
 
   // Reset page if user clicks a filter and no transactions are found
-  if (page && page > 1 && transactions.length === 0) {
-    const params = new URLSearchParams(filters as Record<string, string>)
+  if (page > 1 && transactions.length === 0) {
+    const params = new URLSearchParams()
+    if (filters.search) params.set("search", filters.search)
+    if (filters.dateFrom) params.set("dateFrom", filters.dateFrom)
+    if (filters.dateTo) params.set("dateTo", filters.dateTo)
+    if (filters.ordering) params.set("ordering", filters.ordering)
+    if (filters.categoryCode) params.set("categoryCode", filters.categoryCode)
+    if (filters.projectCode) params.set("projectCode", filters.projectCode)
+    if (filters.type) params.set("type", filters.type)
+
+    const { redirect } = await import("next/navigation")
     redirect(`?${params.toString()}`)
   }
 
@@ -60,12 +93,26 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         </div>
       </header>
 
-      <TransactionSearchAndFilters categories={categories} projects={projects} fields={fields} />
+      <TransactionSearchAndFilters 
+        categories={categories} 
+        projects={projects} 
+        fields={fields}
+        currentFilters={filters}
+      />
 
       <main>
-        <TransactionList transactions={transactions} fields={fields} categories={categories} projects={projects} currencies={currencies} settings={settings} />
+        <TransactionList 
+          transactions={transactions} 
+          fields={fields} 
+          categories={categories} 
+          projects={projects} 
+          currencies={currencies} 
+          settings={settings} 
+        />
 
-        {total > TRANSACTIONS_PER_PAGE && <Pagination totalItems={total} itemsPerPage={TRANSACTIONS_PER_PAGE} />}
+        {total > TRANSACTIONS_PER_PAGE && (
+          <Pagination totalItems={total} itemsPerPage={TRANSACTIONS_PER_PAGE} />
+        )}
 
         {transactions.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-2 h-full min-h-[400px]">
@@ -78,6 +125,18 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
               </UploadButton>
               <NewTransactionDialog fromTransactionId={from}>
                 <Button variant="outline">
+                  <Plus />
+                  Add Manually
+                </Button>
+              </NewTransactionDialog>
+            </div>
+          </div>
+        )}
+      </main>
+    </>
+  )
+}
+
                   <Plus />
                   Add Manually
                 </Button>
