@@ -45,6 +45,7 @@ export const auth = betterAuth({
       maxAge: 365 * 24 * 60 * 60, // 365 days
     },
   },
+  trustedOrigins: config.auth.trustedOrigins,
   advanced: {
     cookiePrefix: "taxhacker",
     database: {

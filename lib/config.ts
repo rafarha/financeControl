@@ -20,6 +20,7 @@ const envSchema = z.object({
   RESEND_AUDIENCE_ID: z.string().default(""),
   STRIPE_SECRET_KEY: z.string().default(""),
   STRIPE_WEBHOOK_SECRET: z.string().default(""),
+  AUTH_ADDITIONAL_ORIGINS: z.string().default(""),
 })
 
 const env = envSchema.parse(process.env)
@@ -64,6 +65,25 @@ const config = {
     secret: env.BETTER_AUTH_SECRET,
     loginUrl: "/enter",
     disableSignup: env.DISABLE_SIGNUP === "true" || env.SELF_HOSTED_MODE === "true",
+    trustedOrigins: (() => {
+      const origins: string[] = []
+      
+      if (typeof window !== "undefined") {
+        origins.push(window.location.origin)
+      }
+      
+      origins.push(env.BASE_URL || `http://localhost:${env.PORT || "7331"}`)
+      
+      if (process.env.VERCEL_URL) {
+        origins.push(`https://${process.env.VERCEL_URL}`)
+      }
+      
+      if (env.AUTH_ADDITIONAL_ORIGINS) {
+        origins.push(...env.AUTH_ADDITIONAL_ORIGINS.split(",").map(s => s.trim()).filter(Boolean))
+      }
+      
+      return [...new Set(origins)]
+    })(),
   },
   stripe: {
     secretKey: env.STRIPE_SECRET_KEY,
