@@ -7,6 +7,7 @@ import { authClient } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useState } from "react"
+import { resetPasswordAction } from "@/app/(auth)/forgot-password/actions"
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("")
@@ -73,10 +74,13 @@ export function ForgotPasswordForm() {
         return
       }
 
+      // OTP verified, now reset the password
+      const resetResult = await resetPasswordAction(email, newPassword, otp)
+      
       setStep("success")
-      setMessage("Code verified! Please sign in with your password. If you don't have a password, use 'Email Code' login method.")
+      setMessage("Password reset successfully! You can now sign in with your new password.")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to verify code")
+      setError(err instanceof Error ? err.message : "Failed to reset password")
     } finally {
       setIsLoading(false)
     }
