@@ -179,6 +179,12 @@ export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
             required
           />
 
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+
           <Button type="submit" disabled={isLoading}>
             {isLoading ? "Loading..." : "Sign In"}
           </Button>
