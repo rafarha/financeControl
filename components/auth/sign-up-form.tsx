@@ -64,7 +64,8 @@ export function SignUpForm() {
         })
       }
 
-      router.push("/dashboard")
+      // Redirect to set password page
+      router.push("/set-password")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to verify the code")
     } finally {

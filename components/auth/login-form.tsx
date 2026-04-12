@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { authClient } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
   const [email, setEmail] = useState(defaultEmail || "")
@@ -16,7 +16,32 @@ export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loginMethod, setLoginMethod] = useState<"otp" | "password">("otp")
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null)
+  const [checkingPassword, setCheckingPassword] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    async function checkPassword() {
+      if (!email || !email.includes("@")) {
+        setHasPassword(null)
+        return
+      }
+
+      setCheckingPassword(true)
+      try {
+        const res = await fetch(`/api/auth/check-password?email=${encodeURIComponent(email)}`)
+        const data = await res.json()
+        setHasPassword(data.hasPassword)
+      } catch {
+        setHasPassword(null)
+      } finally {
+        setCheckingPassword(false)
+      }
+    }
+
+    const timeout = setTimeout(checkPassword, 500)
+    return () => clearTimeout(timeout)
+  }, [email])
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,6 +119,8 @@ export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
     setError(null)
   }
 
+  const showPasswordOption = hasPassword === true
+
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex border rounded-md overflow-hidden">
@@ -108,17 +135,19 @@ export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
         >
           Email Code
         </button>
-        <button
-          type="button"
-          onClick={() => toggleMethod("password")}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-            loginMethod === "password"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted hover:bg-muted/80"
-          }`}
-        >
-          Password
-        </button>
+        {showPasswordOption && (
+          <button
+            type="button"
+            onClick={() => toggleMethod("password")}
+            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+              loginMethod === "password"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted hover:bg-muted/80"
+            }`}
+          >
+            Password
+          </button>
+        )}
       </div>
 
       {loginMethod === "otp" ? (
@@ -192,6 +221,15 @@ export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
       )}
 
       {error && <FormError className="text-center">{error}</FormError>}
+
+      {hasPassword === false && (
+        <div className="text-center text-sm text-muted-foreground">
+          No password set for this account.{" "}
+          <Link href="/forgot-password" className="text-primary hover:underline">
+            Set one now
+          </Link>
+        </div>
+      )}
 
       <div className="text-center text-sm text-muted-foreground">
         Don't have an account?{" "}

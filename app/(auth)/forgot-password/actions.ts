@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db"
 import { getUserByEmail } from "@/models/users"
+import { ensureCredentialAccount } from "@/lib/account"
 import { Argon2id } from "oslo/password"
 
 export async function resetPasswordAction(
@@ -13,6 +14,8 @@ export async function resetPasswordAction(
   if (!user) {
     throw new Error("User not found")
   }
+
+  await ensureCredentialAccount(user.id)
 
   const hashedPassword = await new Argon2id().hash(newPassword)
 
