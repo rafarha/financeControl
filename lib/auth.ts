@@ -27,6 +27,10 @@ export const auth = betterAuth({
   appName: config.app.title,
   baseURL: config.app.baseURL,
   secret: config.auth.secret,
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false,
+  },
   email: {
     provider: "resend",
     from: config.email.from,
@@ -54,7 +58,7 @@ export const auth = betterAuth({
       expiresIn: 10 * 60, // 10 minutes
       sendVerificationOTP: async ({ email, otp }) => {
         const user = await getUserByEmail(email)
-        if (!user) {
+        if (!user && config.auth.disableSignup) {
           throw new APIError("NOT_FOUND", { message: "User with this email does not exist" })
         }
         await sendOTPCodeEmail({ email, otp })
