@@ -1,8 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { MultiCombobox } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Category } from "@/prisma/client"
 import { X } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -17,7 +17,7 @@ export function TransactionFilters({ categories }: TransactionFiltersProps) {
   const searchParams = useSearchParams()
 
   const [filters, setFilters] = useState({
-    categoryCode: searchParams.get("categoryCode") || "",
+    categoryCodes: searchParams.getAll("categoryCode"),
     startDate: searchParams.get("startDate") || "",
     endDate: searchParams.get("endDate") || "",
   })
@@ -25,11 +25,10 @@ export function TransactionFilters({ categories }: TransactionFiltersProps) {
   const applyFilters = () => {
     const params = new URLSearchParams()
 
-    // Preserve page parameter
     const page = searchParams.get("page")
     if (page) params.set("page", page)
 
-    if (filters.categoryCode) params.set("categoryCode", filters.categoryCode)
+    filters.categoryCodes.forEach((code) => params.append("categoryCode", code))
     if (filters.startDate) params.set("startDate", filters.startDate)
     if (filters.endDate) params.set("endDate", filters.endDate)
 
@@ -38,7 +37,7 @@ export function TransactionFilters({ categories }: TransactionFiltersProps) {
 
   const clearFilters = () => {
     setFilters({
-      categoryCode: "",
+      categoryCodes: [],
       startDate: "",
       endDate: "",
     })
@@ -48,36 +47,21 @@ export function TransactionFilters({ categories }: TransactionFiltersProps) {
     router.push(`/transactions?${params.toString()}`)
   }
 
-  const hasFilters = filters.categoryCode || filters.startDate || filters.endDate
+  const hasFilters = filters.categoryCodes.length > 0 || filters.startDate || filters.endDate
 
   return (
     <div className="flex flex-wrap gap-4 items-end mb-6 p-4 bg-muted/50 rounded-lg">
       <div className="flex-1 min-w-[200px]">
-        <label className="text-sm font-medium mb-2 block">Category</label>
-        <Select
-          value={filters.categoryCode || "all"}
+        <label className="text-sm font-medium mb-2 block">Categories</label>
+        <MultiCombobox
+          value={filters.categoryCodes}
           onValueChange={(value) =>
-              setFilters((prev) => ({ ...prev, categoryCode: value === "all" ? "" : value }))
+              setFilters((prev) => ({ ...prev, categoryCodes: value }))
           }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category.code} value={category.code}>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  {category.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          items={categories.map((c) => ({ code: c.code, name: c.name, color: c.color ?? undefined }))}
+          placeholder="Select categories..."
+          emptyMessage="No category found."
+        />
       </div>
 
       <div className="flex-1 min-w-[150px]">

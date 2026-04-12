@@ -121,7 +121,11 @@ export const getTimeSeriesStats = cache(
     }
 
     if (filters.categoryCode) {
-      where.categoryCode = filters.categoryCode
+      if (Array.isArray(filters.categoryCode)) {
+        where.categoryCode = { in: filters.categoryCode }
+      } else {
+        where.categoryCode = filters.categoryCode
+      }
     }
 
     if (filters.projectCode) {
@@ -200,7 +204,11 @@ export const getDetailedTimeSeriesStats = cache(
     }
 
     if (filters.categoryCode) {
-      where.categoryCode = filters.categoryCode
+      if (Array.isArray(filters.categoryCode)) {
+        where.categoryCode = { in: filters.categoryCode }
+      } else {
+        where.categoryCode = filters.categoryCode
+      }
     }
 
     if (filters.projectCode) {

@@ -29,7 +29,7 @@ export type TransactionFilters = {
   dateFrom?: string
   dateTo?: string
   ordering?: string
-  categoryCode?: string
+  categoryCode?: string | string[]
   projectCode?: string
   type?: string
   page?: number
@@ -71,7 +71,11 @@ export const getTransactions = cache(
       }
 
       if (filters.categoryCode) {
-        where.categoryCode = filters.categoryCode
+        if (Array.isArray(filters.categoryCode)) {
+          where.categoryCode = { in: filters.categoryCode }
+        } else {
+          where.categoryCode = filters.categoryCode
+        }
       }
 
       if (filters.projectCode) {

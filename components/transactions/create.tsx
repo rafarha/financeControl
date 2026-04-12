@@ -2,7 +2,7 @@
 
 import { createTransactionAction } from "@/app/(app)/transactions/actions"
 import { FormError } from "@/components/forms/error"
-import { FormSelectCategory } from "@/components/forms/select-category"
+import { FormComboboxCategory } from "@/components/forms/select-category"
 import { FormSelectCurrency } from "@/components/forms/select-currency"
 import { FormSelectProject } from "@/components/forms/select-project"
 import { FormSelectType } from "@/components/forms/select-type"
@@ -116,7 +116,7 @@ export default function TransactionCreateForm({
       </div>
 
       <div className="flex flex-row gap-4">
-        <FormSelectCategory
+        <FormComboboxCategory
           title="Category"
           categories={categories}
           name="categoryCode"
