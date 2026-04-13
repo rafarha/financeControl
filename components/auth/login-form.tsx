@@ -6,89 +6,16 @@ import { Button } from "@/components/ui/button"
 import { authClient } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
   const [email, setEmail] = useState(defaultEmail || "")
   const [password, setPassword] = useState("")
-  const [otp, setOtp] = useState("")
-  const [isOtpSent, setIsOtpSent] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [loginMethod, setLoginMethod] = useState<"otp" | "password">("otp")
-  const [hasPassword, setHasPassword] = useState<boolean | null>(null)
-  const [checkingPassword, setCheckingPassword] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    async function checkPassword() {
-      if (!email || !email.includes("@")) {
-        setHasPassword(null)
-        return
-      }
-
-      setCheckingPassword(true)
-      try {
-        const res = await fetch(`/api/auth/check-password?email=${encodeURIComponent(email)}`)
-        const data = await res.json()
-        setHasPassword(data.hasPassword)
-      } catch {
-        setHasPassword(null)
-      } finally {
-        setCheckingPassword(false)
-      }
-    }
-
-    const timeout = setTimeout(checkPassword, 500)
-    return () => clearTimeout(timeout)
-  }, [email])
-
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = await authClient.emailOtp.sendVerificationOtp({
-        email,
-        type: "sign-in",
-      })
-      if (result.error) {
-        setError(result.error.message || "Failed to send the code")
-        return
-      }
-      setIsOtpSent(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send the code")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = await authClient.signIn.emailOtp({
-        email,
-        otp,
-      })
-      if (result.error) {
-        setError("The code is invalid or expired")
-        return
-      }
-
-      router.push("/dashboard")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to verify the code")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handlePasswordSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
@@ -111,132 +38,42 @@ export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
     }
   }
 
-  const toggleMethod = (method: "otp" | "password") => {
-    setLoginMethod(method)
-    setIsOtpSent(false)
-    setOtp("")
-    setPassword("")
-    setError(null)
-  }
-
-  const showPasswordOption = hasPassword === true
-
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <div className="flex border rounded-md overflow-hidden">
-        <button
-          type="button"
-          onClick={() => toggleMethod("otp")}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-            loginMethod === "otp"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted hover:bg-muted/80"
-          }`}
-        >
-          Email Code
-        </button>
-        {showPasswordOption && (
-          <button
-            type="button"
-            onClick={() => toggleMethod("password")}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-              loginMethod === "password"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted hover:bg-muted/80"
-            }`}
-          >
-            Password
-          </button>
-        )}
+    <form onSubmit={handleSignIn} className="flex flex-col gap-4 w-full">
+      <FormInput
+        title="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+
+      <FormInput
+        title="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+
+      <div className="flex justify-end">
+        <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+          Forgot password?
+        </Link>
       </div>
 
-      {loginMethod === "otp" ? (
-        <form onSubmit={isOtpSent ? handleVerifyOtp : handleSendOtp} className="flex flex-col gap-4">
-          <FormInput
-            title="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isOtpSent}
-          />
-
-          {isOtpSent && (
-            <FormInput
-              title="Check your email for the verification code"
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
-              maxLength={6}
-              pattern="[0-9]{6}"
-            />
-          )}
-
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Loading..." : isOtpSent ? "Verify Code" : "Send Code"}
-          </Button>
-
-          {isOtpSent && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setIsOtpSent(false)
-                setOtp("")
-              }}
-            >
-              Use a different email
-            </Button>
-          )}
-        </form>
-      ) : (
-        <form onSubmit={handlePasswordSignIn} className="flex flex-col gap-4">
-          <FormInput
-            title="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-
-          <FormInput
-            title="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-
-          <div className="flex justify-end">
-            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Loading..." : "Sign In"}
-          </Button>
-        </form>
-      )}
+      <Button type="submit" disabled={isLoading}>
+        {isLoading ? "Loading..." : "Sign In"}
+      </Button>
 
       {error && <FormError className="text-center">{error}</FormError>}
 
-      {hasPassword === false && (
-        <div className="text-center text-sm text-muted-foreground">
-          No password set for this account.{" "}
-          <Link href="/forgot-password" className="text-primary hover:underline">
-            Set one now
-          </Link>
-        </div>
-      )}
-
       <div className="text-center text-sm text-muted-foreground">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link href="/sign-up" className="text-primary hover:underline">
           Sign up
         </Link>
       </div>
-    </div>
+    </form>
   )
 }
