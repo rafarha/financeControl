@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/db"
 import { getUserByEmail } from "@/models/users"
 import { ensureCredentialAccount } from "@/lib/account"
-import bcrypt from "bcryptjs"
+import { hashPassword } from "better-auth/crypto"
 
 export async function resetPasswordAction(
   email: string,
@@ -17,7 +17,7 @@ export async function resetPasswordAction(
 
   await ensureCredentialAccount(user.id)
 
-  const hashedPassword = await bcrypt.hash(newPassword, 10)
+  const hashedPassword = await hashPassword(newPassword)
 
   await prisma.account.updateMany({
     where: {

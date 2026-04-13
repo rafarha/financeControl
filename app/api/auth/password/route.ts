@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth"
 import { ensureCredentialAccount } from "@/lib/account"
 import { prisma } from "@/lib/db"
-import bcrypt from "bcryptjs"
+import { hashPassword } from "better-auth/crypto"
 
 export async function PATCH(request: Request) {
   try {
@@ -20,7 +20,7 @@ export async function PATCH(request: Request) {
 
     await ensureCredentialAccount(session.user.id)
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await hashPassword(password)
 
     await prisma.account.updateMany({
       where: {

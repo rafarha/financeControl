@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 
-function isArgon2idHash(hash: string | null): boolean {
-  return hash !== null && hash.startsWith("$argon2id$")
+function isValidBetterAuthHash(hash: string | null): boolean {
+  if (!hash) return false
+  const parts = hash.split(":")
+  return parts.length === 2 && parts[0].length === 32 && parts[1].length === 128
 }
 
 export async function POST(request: Request) {
@@ -27,11 +29,11 @@ export async function POST(request: Request) {
       },
     })
 
-    const argon2idAccounts = accounts.filter((a) => isArgon2idHash(a.password))
+    const invalidAccounts = accounts.filter((a) => !isValidBetterAuthHash(a.password))
 
-    if (argon2idAccounts.length === 0) {
+    if (invalidAccounts.length === 0) {
       return NextResponse.json({
-        message: "No Argon2id hashes found",
+        message: "All passwords use valid better-auth scrypt format",
         cleaned: 0
       })
     }
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
     const result = await prisma.account.updateMany({
       where: {
         id: {
-          in: argon2idAccounts.map((a) => a.id),
+          in: invalidAccounts.map((a) => a.id),
         },
       },
       data: {
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({
-      message: "Cleaned Argon2id hashes",
+      message: "Cleaned invalid password hashes",
       cleaned: result.count
     })
   } catch (error) {
