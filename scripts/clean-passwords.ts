@@ -3,7 +3,9 @@ import { PrismaClient } from "../prisma/client/index.js"
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: process.env.DATABASE_URL
+        || process.env.POSTGRES_URL_NON_POOLING
+        || process.env.POSTGRES_PRISMA_URL,
     },
   },
 })
