@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/db"
 import { getUserByEmail } from "@/models/users"
 import { ensureCredentialAccount } from "@/lib/account"
-import { Argon2id } from "oslo/password"
+import bcrypt from "bcryptjs"
 
 export async function resetPasswordAction(
   email: string,
@@ -17,7 +17,7 @@ export async function resetPasswordAction(
 
   await ensureCredentialAccount(user.id)
 
-  const hashedPassword = await new Argon2id().hash(newPassword)
+  const hashedPassword = await bcrypt.hash(newPassword, 10)
 
   await prisma.account.updateMany({
     where: {

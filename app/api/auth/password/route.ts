@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth"
 import { ensureCredentialAccount } from "@/lib/account"
-import { Argon2id } from "oslo/password"
+import { prisma } from "@/lib/db"
+import bcrypt from "bcryptjs"
 
 export async function PATCH(request: Request) {
   try {
@@ -19,7 +20,7 @@ export async function PATCH(request: Request) {
 
     await ensureCredentialAccount(session.user.id)
 
-    const hashedPassword = await new Argon2id().hash(password)
+    const hashedPassword = await bcrypt.hash(password, 10)
 
     await prisma.account.updateMany({
       where: {
@@ -37,5 +38,3 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Failed to set password" }, { status: 500 })
   }
 }
-
-import { prisma } from "@/lib/db"
