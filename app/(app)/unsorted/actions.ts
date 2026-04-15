@@ -114,6 +114,7 @@ export async function saveFileAsTransactionAction(
 
     revalidatePath("/unsorted")
     revalidatePath("/transactions")
+    revalidatePath("/dashboard")
 
     return { success: true, data: transaction }
   } catch (error) {
