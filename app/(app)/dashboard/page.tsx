@@ -10,6 +10,8 @@ import { getSettings } from "@/models/settings"
 import { TransactionFilters } from "@/models/transactions"
 import { Metadata } from "next"
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: "Dashboard",
   description: config.app.description,
