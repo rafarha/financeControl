@@ -43,6 +43,7 @@ export async function createTransactionAction(
     const transaction = await createTransaction(user.id, validatedForm.data)
 
     revalidatePath("/transactions")
+    revalidatePath("/dashboard")
     return { success: true, data: transaction }
   } catch (error) {
     console.error("Failed to create transaction:", error)
@@ -66,6 +67,7 @@ export async function saveTransactionAction(
     const transaction = await updateTransaction(transactionId, user.id, validatedForm.data)
 
     revalidatePath("/transactions")
+    revalidatePath("/dashboard")
     return { success: true, data: transaction }
   } catch (error) {
     console.error("Failed to update transaction:", error)
@@ -85,6 +87,7 @@ export async function deleteTransactionAction(
     await deleteTransaction(transaction.id, user.id)
 
     revalidatePath("/transactions")
+    revalidatePath("/dashboard")
 
     return { success: true, data: transaction }
   } catch (error) {
@@ -208,6 +211,7 @@ export async function bulkDeleteTransactionsAction(transactionIds: string[]) {
     const user = await getCurrentUser()
     await bulkDeleteTransactions(transactionIds, user.id)
     revalidatePath("/transactions")
+    revalidatePath("/dashboard")
     return { success: true }
   } catch (error) {
     console.error("Failed to delete transactions:", error)
